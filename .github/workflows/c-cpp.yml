@@ -20,8 +20,8 @@ jobs:
     # Install MinGW-w64 and basic tools
     - name: Install MinGW-w64 and dependencies
       run: |
-        sudo apt-get update
-        sudo apt-get install -y \
+        sudo apt-get -qq update
+        sudo apt-get -qq install -y \
           mingw-w64 \
           cmake \
           build-essential \
@@ -69,7 +69,7 @@ jobs:
         ls -l /usr/x86_64-w64-mingw32/lib/libgmpxx.a || (echo "Static GMP C++ library missing!" && exit 1)
         echo "--- GMP files seem present. Proceeding with MPFR ---"
 
-        wget --quiet https://www.mpfr.org/mpfr-current/mpfr-${MPFR_VERSION}.tar.xz
+        wget https://www.mpfr.org/mpfr-current/mpfr-${MPFR_VERSION}.tar.xz
         tar -xf mpfr-${MPFR_VERSION}.tar.xz
         cd mpfr-${MPFR_VERSION}
 
