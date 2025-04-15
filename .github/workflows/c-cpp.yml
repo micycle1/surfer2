@@ -37,7 +37,7 @@ jobs:
         ./bootstrap.sh
         ./b2 --clean
         ./b2 --prefix=/usr/x86_64-w64-mingw32 toolset=gcc target-os=windows address-model=64 \
-          variant=release --with-graph --with-iostreams install
+          variant=release threading=single --with-graph --with-iostreams install
         cd ..
 
     # Install CGAL for MinGW-w64
