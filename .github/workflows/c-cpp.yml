@@ -31,7 +31,7 @@ jobs:
     # Install Boost for MinGW-w64
     - name: Install Boost
       run: |
-        wget https://boostorg.jfrog.io/artifactory/main/release/1.83.0/source/boost_1_83_0.tar.gz
+        wget https://downloads.sourceforge.net/project/boost/boost/1.83.0/boost_1_83_0.tar.gz
         tar -xzf boost_1_83_0.tar.gz
         cd boost_1_83_0
         ./bootstrap.sh
