@@ -26,7 +26,7 @@
 #include <boost/iostreams/device/file_descriptor.hpp>
 #include <boost/iostreams/stream.hpp>
 
-#include <sys/resource.h>
+// #include <sys/resource.h>
 
 static const char* short_options = "hc:v::S:D";
 static struct option long_options[] = {
@@ -109,12 +109,12 @@ do_surf(std::istream& is, std::ostream& os, int restrict_component, const std::s
     stats_os << "[SURF] CPUTIME_TOTAL_EX_PARSE "  << ((double) (stage_99-stage_01))/CLOCKS_PER_SEC << std::endl;
 
 
-    struct rusage usage;
-    if (getrusage(RUSAGE_SELF, &usage) < 0) {
-      LOG(ERROR) << "getrusage() failed: " << strerror(errno);
-      exit(1);
-    }
-    stats_os << "[SURF] MAXRSS                 "  << usage.ru_maxrss << std::endl;
+    // struct rusage usage;
+    // if (getrusage(RUSAGE_SELF, &usage) < 0) {
+    //   LOG(ERROR) << "getrusage() failed: " << strerror(errno);
+    //   exit(1);
+    // }
+    // stats_os << "[SURF] MAXRSS                 "  << usage.ru_maxrss << std::endl;
 
     stats_os << "[SURF] NUM_EVENTS                                          "  << s.get_kt().event_type_counter[int(CollapseType::UNDEFINED)] << std::endl;
     stats_os << "[SURF] NUM_EVENTS_FACE_HAS_INFINITELY_FAST_VERTEX_OPPOSING "  << s.get_kt().event_type_counter[int(CollapseType::FACE_HAS_INFINITELY_FAST_VERTEX_OPPOSING)] << std::endl;
