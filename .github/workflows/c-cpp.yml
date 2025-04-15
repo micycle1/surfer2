@@ -1,0 +1,88 @@
+name: Build surfer2 CLI for Windows
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-windows:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checkout the repository with submodules
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    # Install MinGW-w64 and basic tools
+    - name: Install MinGW-w64 and dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          mingw-w64 \
+          cmake \
+          build-essential \
+          wget \
+          unzip
+
+    # Install Boost for MinGW-w64
+    - name: Install Boost
+      run: |
+        wget https://boostorg.jfrog.io/artifactory/main/release/1.83.0/source/boost_1_83_0.tar.gz
+        tar -xzf boost_1_83_0.tar.gz
+        cd boost_1_83_0
+        ./bootstrap.sh
+        ./b2 --prefix=/usr/x86_64-w64-mingw32 toolset=gcc target-os=windows address-model=64 \
+          --with-graph --with-iostreams install
+        cd ..
+
+    # Install CGAL for MinGW-w64
+    - name: Install CGAL
+      run: |
+        wget https://github.com/CGAL/cgal/releases/download/v5.6.1/CGAL-5.6.1.tar.xz
+        tar -xf CGAL-5.6.1.tar.xz
+        cd CGAL-5.6.1
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/mingw64.cmake \
+          -DCMAKE_INSTALL_PREFIX=/usr/x86_64-w64-mingw32
+        make -j$(nproc)
+        sudo make install
+        cd ../..
+
+    # Create a CMake toolchain file for MinGW-w64
+    - name: Create CMake toolchain file
+      run: |
+        cat <<EOF > mingw-toolchain.cmake
+        set(CMAKE_SYSTEM_NAME Windows)
+        set(CMAKE_SYSTEM_PROCESSOR x86_64)
+        set(CMAKE_C_COMPILER x86_64-w64-mingw32-gcc)
+        set(CMAKE_CXX_COMPILER x86_64-w64-mingw32-g++)
+        set(CMAKE_RC_COMPILER x86_64-w64-mingw32-windres)
+        set(CMAKE_FIND_ROOT_PATH /usr/x86_64-w64-mingw32)
+        set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+        set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+        set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+        EOF
+
+    # Configure and build surfer2 (CLI only)
+    - name: Build surfer2 CLI
+      run: |
+        mkdir build
+        cd build
+        cmake .. -DCMAKE_TOOLCHAIN_FILE=../mingw-toolchain.cmake \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DBOOST_ROOT=/usr/x86_64-w64-mingw32 \
+          -DCGAL_DIR=/usr/x86_64-w64-mingw32/lib/CGAL \
+          -DBUILD_GUI=OFF
+        make -j$(nproc) surfer
+
+    # Package artifacts
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: surfer2-windows-cli
+        path: build/cc/surfer.exe
