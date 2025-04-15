@@ -69,7 +69,7 @@ jobs:
         ls -l /usr/x86_64-w64-mingw32/lib/libgmpxx.a || (echo "Static GMP C++ library missing!" && exit 1)
         echo "--- GMP files seem present. Proceeding with MPFR ---"
 
-        wget https://ftp.gnu.org/gnu/mpfr/mpfr-${MPFR_VERSION}.tar.xz
+        wget --quiet https://ftp.gnu.org/gnu/mpfr/mpfr-${MPFR_VERSION}.tar.xz
         tar -xf mpfr-${MPFR_VERSION}.tar.xz
         cd mpfr-${MPFR_VERSION}
 
@@ -131,6 +131,7 @@ jobs:
                  threading=multi \
                  --with-graph \
                  --with-iostreams \
+                 -d1 \
                  install
         cd ..
         sudo rm -rf boost_1_83_0 boost_1_83_0.tar.gz # Clean up source
