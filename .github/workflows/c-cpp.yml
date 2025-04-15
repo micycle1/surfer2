@@ -35,8 +35,9 @@ jobs:
         tar -xzf boost_1_83_0.tar.gz
         cd boost_1_83_0
         ./bootstrap.sh
+        ./b2 --clean
         ./b2 --prefix=/usr/x86_64-w64-mingw32 toolset=gcc target-os=windows address-model=64 \
-          --with-graph --with-iostreams install
+          variant=release --with-graph --with-iostreams install
         cd ..
 
     # Install CGAL for MinGW-w64
