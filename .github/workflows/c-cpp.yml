@@ -46,11 +46,27 @@ jobs:
         wget --quiet https://downloads.sourceforge.net/project/boost/boost/1.83.0/boost_1_83_0.tar.gz
         tar -xzf boost_1_83_0.tar.gz
         cd boost_1_83_0
+
+        # Create user-config.jam to specify '-pthread' for the MinGW toolset
+        # This tells Boost Build (b2) to use -pthread instead of the default -mthreads for this compiler
+        echo "using gcc : : x86_64-w64-mingw32-g++ : <cxxflags>-pthread <linkflags>-pthread ;" > user-config.jam
+
+        # Bootstrap (may not strictly need user-config.jam before this, but doesn't hurt)
         ./bootstrap.sh
-        # No sudo needed for building, add sudo only for install if required
-        # Consider threading=multi if single isn't strictly needed
-        sudo ./b2 --prefix=/usr/x86_64-w64-mingw32 toolset=gcc target-os=windows address-model=64 \
-          variant=release threading=multi --with-graph --with-iostreams install
+
+        # Build and install Boost using the configuration
+        # Added --user-config=user-config.jam to ensure it's picked up
+        # Kept threading=multi as we configured the flags for it
+        sudo ./b2 --user-config=user-config.jam \
+                 --prefix=/usr/x86_64-w64-mingw32 \
+                 toolset=gcc \
+                 target-os=windows \
+                 address-model=64 \
+                 variant=release \
+                 threading=multi \
+                 --with-graph \
+                 --with-iostreams \
+                 install
         cd ..
         rm -rf boost_1_83_0 boost_1_83_0.tar.gz # Clean up source
 
