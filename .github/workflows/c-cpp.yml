@@ -28,31 +28,48 @@ jobs:
           wget \
           unzip
 
+    # --- Caching (Optional but Recommended) ---
+    - name: Cache MinGW sysroot
+      id: cache-mingw
+      uses: actions/cache@v4
+      with:
+        path: /usr/x86_64-w64-mingw32
+        # Use versions or commit hashes if available, otherwise file hashes
+        key: ${{ runner.os }}-mingw-boost-1.83.0-cgal-5.6.1
+
+    # --- Build Dependencies (only if cache missed) ---
+
     # Install Boost for MinGW-w64
     - name: Install Boost
+      if: steps.cache-mingw.outputs.cache-hit != 'true'
       run: |
         wget --quiet https://downloads.sourceforge.net/project/boost/boost/1.83.0/boost_1_83_0.tar.gz
         tar -xzf boost_1_83_0.tar.gz
         cd boost_1_83_0
         ./bootstrap.sh
-        sudo ./b2 --clean
-        ./b2 --prefix=/usr/x86_64-w64-mingw32 toolset=gcc target-os=windows address-model=64 \
-          variant=release threading=single --with-graph --with-iostreams install
+        # No sudo needed for building, add sudo only for install if required
+        # Consider threading=multi if single isn't strictly needed
+        sudo ./b2 --prefix=/usr/x86_64-w64-mingw32 toolset=gcc target-os=windows address-model=64 \
+          variant=release threading=multi --with-graph --with-iostreams install
         cd ..
+        rm -rf boost_1_83_0 boost_1_83_0.tar.gz # Clean up source
 
     # Install CGAL for MinGW-w64
     - name: Install CGAL
+      if: steps.cache-mingw.outputs.cache-hit != 'true'
       run: |
         wget --quiet https://github.com/CGAL/cgal/releases/download/v5.6.1/CGAL-5.6.1.tar.xz
         tar -xf CGAL-5.6.1.tar.xz
         cd CGAL-5.6.1
         mkdir build
         cd build
+        # Using CGAL's toolchain is likely fine here, but could use the manual one below too
         cmake .. -DCMAKE_TOOLCHAIN_FILE=../cmake/toolchains/mingw64.cmake \
           -DCMAKE_INSTALL_PREFIX=/usr/x86_64-w64-mingw32
         make -j$(nproc)
         sudo make install
         cd ../..
+        rm -rf CGAL-5.6.1 CGAL-5.6.1.tar.xz # Clean up source
 
     # Create a CMake toolchain file for MinGW-w64
     - name: Create CMake toolchain file
@@ -74,16 +91,32 @@ jobs:
       run: |
         mkdir build
         cd build
+        # Removed ineffective -DBUILD_GUI=OFF
+        # Kept explicit BOOST_ROOT and CGAL_DIR, though they might be redundant
         cmake .. -DCMAKE_TOOLCHAIN_FILE=../mingw-toolchain.cmake \
           -DCMAKE_BUILD_TYPE=Release \
           -DBOOST_ROOT=/usr/x86_64-w64-mingw32 \
-          -DCGAL_DIR=/usr/x86_64-w64-mingw32/lib/CGAL \
-          -DBUILD_GUI=OFF
+          -DCGAL_DIR=/usr/x86_64-w64-mingw32/lib/CGAL
+        # Build the specific 'surfer' target
         make -j$(nproc) surfer
 
-    # Package artifacts
+    # Package artifacts (Executable + Required DLLs)
+    - name: Package artifacts
+      run: |
+        mkdir artifact_dir
+        cp build/cc/surfer.exe artifact_dir/
+        # Copy necessary MinGW runtime DLLs (adjust path/names if needed for your MinGW version)
+        # Find the exact location; might be /usr/lib/gcc/x86_64-w64-mingw32/<version>/ or /usr/x86_64-w64-mingw32/bin
+        # This requires figuring out the exact runtime DLL location/names
+        # Example:
+        cp /usr/x86_64-w64-mingw32/bin/libgcc_s_seh-1.dll artifact_dir/
+        cp /usr/x86_64-w64-mingw32/bin/libstdc++-6.dll artifact_dir/
+        # Add libwinpthread-1.dll if your application uses threads directly or indirectly
+        # cp /usr/x86_64-w64-mingw32/bin/libwinpthread-1.dll artifact_dir/
+        # Add Boost/CGAL DLLs here IF they were built as shared libs
+
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
         name: surfer2-windows-cli
-        path: build/cc/surfer.exe
+        path: artifact_dir # Upload the whole directory
