@@ -68,7 +68,7 @@ jobs:
                  --with-iostreams \
                  install
         cd ..
-        rm -rf boost_1_83_0 boost_1_83_0.tar.gz # Clean up source
+        sudo rm -rf boost_1_83_0 boost_1_83_0.tar.gz # Clean up source
 
     # Install CGAL for MinGW-w64
     - name: Install CGAL
@@ -85,7 +85,7 @@ jobs:
         make -j$(nproc)
         sudo make install
         cd ../..
-        rm -rf CGAL-5.6.1 CGAL-5.6.1.tar.xz # Clean up source
+        sudo rm -rf CGAL-5.6.1 CGAL-5.6.1.tar.xz # Clean up source
 
     # Create a CMake toolchain file for MinGW-w64
     - name: Create CMake toolchain file
