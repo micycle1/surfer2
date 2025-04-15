@@ -164,8 +164,8 @@ jobs:
         cmake .. -DCMAKE_TOOLCHAIN_FILE=../mingw-toolchain.cmake \
                  -DCMAKE_BUILD_TYPE=Release \
                  -DBOOST_ROOT=/usr/x86_64-w64-mingw32 \
-                 -DCGAL_DIR=/usr/x86_64-w64-mingw32/lib/CGAL
-                 -DBUILD_CLI=ON # don't build GUI
+                 -DCGAL_DIR=/usr/x86_64-w64-mingw32/lib/CGAL \
+                 -DBUILD_CLI=ON # don't build GUI 
         make -j$(nproc) surfer
 
     # Package artifacts (Executable + Required DLLs)
