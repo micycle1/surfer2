@@ -124,10 +124,13 @@ configure_file (
 include_directories("${PROJECT_BINARY_DIR}")
 
 if(LIB_ONLY)
+  message(STATUS "Building library only (surf) due to LIB_ONLY=ON.")
   subdirs (surf)
 elseif(BUILD_CLI)
+  message(STATUS "Building library (surf) and CLI (cc) due to BUILD_CLI=ON.")
   subdirs (surf cc)
 else()
+  message(STATUS "Building library (surf), GUI (gui), and CLI (cc).")
   subdirs (surf gui cc)
 endif()
 
