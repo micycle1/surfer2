@@ -39,6 +39,43 @@ jobs:
 
     # --- Build Dependencies (only if cache missed) ---
 
+    # Install GMP for MinGW-w64
+    - name: Install GMP
+      if: steps.cache-mingw.outputs.cache-hit != 'true'
+      run: |
+        GMP_VERSION=6.3.0
+        wget --quiet https://ftp.gnu.org/gnu/gmp/gmp-${GMP_VERSION}.tar.xz
+        tar -xf gmp-${GMP_VERSION}.tar.xz
+        cd gmp-${GMP_VERSION}
+        # Configure for MinGW cross-compilation
+        # Need --enable-cxx for CGAL
+        ./configure --host=x86_64-w64-mingw32 \
+                    --prefix=/usr/x86_64-w64-mingw32 \
+                    --enable-cxx \
+                    --disable-shared --enable-static
+        make -j$(nproc)
+        sudo make install
+        cd ..
+        sudo rm -rf gmp-${GMP_VERSION} gmp-${GMP_VERSION}.tar.xz
+
+    # Install MPFR for MinGW-w64
+    - name: Install MPFR
+      if: steps.cache-mingw.outputs.cache-hit != 'true'
+      run: |
+        MPFR_VERSION=4.2.1
+        wget --quiet https://www.mpfr.org/mpfr-current/mpfr-${MPFR_VERSION}.tar.xz
+        tar -xf mpfr-${MPFR_VERSION}.tar.xz
+        cd mpfr-${MPFR_VERSION}
+        # Configure for MinGW, telling it where GMP is
+        ./configure --host=x86_64-w64-mingw32 \
+                    --prefix=/usr/x86_64-w64-mingw32 \
+                    --with-gmp=/usr/x86_64-w64-mingw32 \
+                    --disable-shared --enable-static
+        make -j$(nproc)
+        sudo make install
+        cd ..
+        sudo rm -rf mpfr-${MPFR_VERSION} mpfr-${MPFR_VERSION}.tar.xz
+
     - name: Create CMake toolchain file
       run: |
         cat <<EOF > mingw-toolchain.cmake
