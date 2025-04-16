@@ -177,8 +177,8 @@ jobs:
         # Find the exact location; might be /usr/lib/gcc/x86_64-w64-mingw32/<version>/ or /usr/x86_64-w64-mingw32/bin
         # This requires figuring out the exact runtime DLL location/names
         # Example:
-        cp /usr/x86_64-w64-mingw32/bin/libgcc_s_seh-1.dll artifact_dir/
-        cp /usr/x86_64-w64-mingw32/bin/libstdc++-6.dll artifact_dir/
+        # cp /usr/x86_64-w64-mingw32/bin/libgcc_s_seh-1.dll artifact_dir/
+        # cp /usr/x86_64-w64-mingw32/bin/libstdc++-6.dll artifact_dir/
         # Add libwinpthread-1.dll if your application uses threads directly or indirectly
         # cp /usr/x86_64-w64-mingw32/bin/libwinpthread-1.dll artifact_dir/
         # Add Boost/CGAL DLLs here IF they were built as shared libs
