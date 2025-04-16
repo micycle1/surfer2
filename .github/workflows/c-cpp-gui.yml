@@ -45,7 +45,8 @@ jobs:
             python3-mako \
             pkg-config \
             autoconf \
-            automake
+            automake \
+            autopoint
           echo "+++ Verifying installed tools..."
           which autopoint || (echo "ERROR: autopoint not found!" && exit 1)
           which libtool || (echo "ERROR: libtool not found!" && exit 1)
