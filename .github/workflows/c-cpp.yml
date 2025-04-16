@@ -168,20 +168,38 @@ jobs:
                  -DBUILD_CLI=ON # don't build GUI 
         make -j$(nproc) surfer
 
-    # Package artifacts (Executable + Required DLLs)
-    - name: Package artifacts
+    - name: Package artifacts and log DLL locations
       run: |
         mkdir artifact_dir
         cp build/cc/surfer.exe artifact_dir/
-        # Copy necessary MinGW runtime DLLs (adjust path/names if needed for your MinGW version)
-        # Find the exact location; might be /usr/lib/gcc/x86_64-w64-mingw32/<version>/ or /usr/x86_64-w64-mingw32/bin
-        # This requires figuring out the exact runtime DLL location/names
-        # Example:
-        # cp /usr/x86_64-w64-mingw32/bin/libgcc_s_seh-1.dll artifact_dir/
-        # cp /usr/x86_64-w64-mingw32/bin/libstdc++-6.dll artifact_dir/
-        # Add libwinpthread-1.dll if your application uses threads directly or indirectly
-        # cp /usr/x86_64-w64-mingw32/bin/libwinpthread-1.dll artifact_dir/
-        # Add Boost/CGAL DLLs here IF they were built as shared libs
+    
+        # Locate libgcc_s_seh-1.dll and log its path
+        DLL_GCC=$(find /usr -type f -name 'libgcc_s_seh-1.dll' | head -n 1)
+        if [ -z "$DLL_GCC" ]; then
+          echo "Error: libgcc_s_seh-1.dll not found!" && exit 1
+        else
+          echo "Found libgcc_s_seh-1.dll at: $DLL_GCC"
+          cp "$DLL_GCC" artifact_dir/
+        fi
+    
+        # Locate libstdc++-6.dll and log its path
+        DLL_STDCXX=$(find /usr -type f -name 'libstdc++-6.dll' | head -n 1)
+        if [ -z "$DLL_STDCXX" ]; then
+          echo "Error: libstdc++-6.dll not found!" && exit 1
+        else
+          echo "Found libstdc++-6.dll at: $DLL_STDCXX"
+          cp "$DLL_STDCXX" artifact_dir/
+        fi
+    
+        # Locate libwinpthread-1.dll (if available) and log its path
+        DLL_WINPTHREAD=$(find /usr -type f -name 'libwinpthread-1.dll' | head -n 1)
+        if [ -n "$DLL_WINPTHREAD" ]; then
+          echo "Found libwinpthread-1.dll at: $DLL_WINPTHREAD"
+          cp "$DLL_WINPTHREAD" artifact_dir/
+        else
+          echo "libwinpthread-1.dll not found (not required?)"
+        fi
+
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
