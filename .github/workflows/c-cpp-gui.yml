@@ -29,7 +29,7 @@ jobs:
           sudo apt-get -qq update
           # Install all dependencies in one command, ensuring backslashes are correct
           # and removing comments from within the command list
-          sudo apt-get -qq install -y --no-install-recommends \
+          sudo apt-get install -y --no-install-recommends \
             mingw-w64 \
             cmake \
             build-essential \
@@ -40,11 +40,16 @@ jobs:
             gperf \
             intltool \
             libtool \
+            libtool-bin \
             lzip \
             python3-mako \
             pkg-config \
             autoconf \
             automake
+          echo "+++ Verifying installed tools..."
+          which autopoint || (echo "ERROR: autopoint not found!" && exit 1)
+          which libtool || (echo "ERROR: libtool not found!" && exit 1)
+          echo "+++ Tool verification successful."
 
       # Cache the MinGW sysroot (from the non‑MXE installs, if any)
       - name: Cache MinGW sysroot
