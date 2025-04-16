@@ -1,4 +1,4 @@
-name: Build surfer2 for Windows
+name: Build surfer2 w/ GUI for Windows
 
 env:
   GMP_VERSION: 6.3.0
@@ -23,18 +23,18 @@ jobs:
         with:
           submodules: recursive
 
-      # Install MinGW-w64 and basic building tools PLUS MXE host dependencies
+      # Install build dependencies
       - name: Install build dependencies
         run: |
           sudo apt-get -qq update
-          sudo apt-get -qq install -y \
-            # Basic tools for cross-compilation and workflow
+          # Install all dependencies in one command, ensuring backslashes are correct
+          # and removing comments from within the command list
+          sudo apt-get -qq install -y --no-install-recommends \
             mingw-w64 \
             cmake \
             build-essential \
             wget \
             unzip \
-            # MXE host requirements identified from the build failure
             gettext \
             libgdk-pixbuf2.0-bin \
             gperf \
@@ -42,7 +42,6 @@ jobs:
             libtool \
             lzip \
             python3-mako \
-            # Other common build dependencies often needed
             pkg-config \
             autoconf \
             automake
