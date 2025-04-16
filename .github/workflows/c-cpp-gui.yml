@@ -98,16 +98,15 @@ jobs:
           sudo rm -rf ${BOOST_ARCHIVE} ${BOOST_ARCHIVE}.tar.gz
 
       # ---------------------------------------------------------------------------
-      # New step: Build Windows Qt (qt5-base) using MXE.
-      # This step clones MXE and builds qt5-base. The MXE toolchain file will later be
-      # used for both CGAL and the final build.
+      # New step: Build Windows Qt (qtbase) using MXE.
+      # This step clones MXE and builds the qtbase package.
       # ---------------------------------------------------------------------------
       - name: Build Windows Qt using MXE
         run: |
           git clone https://github.com/mxe/mxe.git
           cd mxe
-          # Build only qt5-base (this can take a long time)
-          make qt5-base -j$(nproc)
+          # Build qtbase (essential Windows Qt libraries needed for surfgui)
+          make qtbase -j$(nproc)
           cd ..
 
       # ---------------------------------------------------------------------------
@@ -153,7 +152,7 @@ jobs:
           cp build/cc/surfer.exe artifact_dir/ || echo "CLI target not found!"
           # Copy the GUI executable (assuming its output is in build/gui)
           cp build/gui/surfgui.exe artifact_dir/ || echo "GUI target not found!"
-
+          
           # Locate and copy required DLLs
           DLL_GCC=$(find /usr -type f -name 'libgcc_s_seh-1.dll' | head -n 1)
           [ -z "$DLL_GCC" ] && { echo "Error: libgcc_s_seh-1.dll not found!" && exit 1; } || { echo "Found libgcc_s_seh-1.dll"; cp "$DLL_GCC" artifact_dir/; }
