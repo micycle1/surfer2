@@ -1,5 +1,11 @@
 name: Build surfer2 CLI for Windows
 
+env:
+  GMP_VERSION: 6.3.0
+  MPFR_VERSION: 4.2.1
+  BOOST_VERSION: 1.83.0
+  CGAL_VERSION: 5.6.1
+
 on:
   push:
     branches: [ master ]
@@ -29,13 +35,12 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /usr/x86_64-w64-mingw32
-          key: ${{ runner.os }}-mingw-boost-1.83.0-cgal-5.6.1
+          key: ${{ runner.os }}-mingw-boost-${{ env.BOOST_VERSION }}-cgal-${{ env.CGAL_VERSION }}
 
       # Install GMP only if the cache is missed
       - name: Install GMP
         if: steps.cache-mingw.outputs.cache-hit != 'true'
         run: |
-          GMP_VERSION=6.3.0
           wget --quiet https://ftp.gnu.org/gnu/gmp/gmp-${GMP_VERSION}.tar.xz
           tar -xf gmp-${GMP_VERSION}.tar.xz
           cd gmp-${GMP_VERSION}
@@ -52,7 +57,6 @@ jobs:
       - name: Install MPFR
         if: steps.cache-mingw.outputs.cache-hit != 'true'
         run: |
-          MPFR_VERSION=4.2.1
           ls /usr/x86_64-w64-mingw32/include/gmp.h || exit 1
           ls /usr/x86_64-w64-mingw32/lib/libgmp.a || exit 1
           ls /usr/x86_64-w64-mingw32/lib/libgmpxx.a || exit 1
@@ -87,9 +91,11 @@ jobs:
       - name: Install Boost
         if: steps.cache-mingw.outputs.cache-hit != 'true'
         run: |
-          wget --quiet https://downloads.sourceforge.net/project/boost/boost/1.83.0/boost_1_83_0.tar.gz
-          tar -xzf boost_1_83_0.tar.gz
-          cd boost_1_83_0
+          # Note: The Boost archive uses underscores instead of dots.
+          BOOST_ARCHIVE=boost_${BOOST_VERSION//./_}
+          wget --quiet https://archives.boost.io/release/${BOOST_VERSION}/source/${BOOST_ARCHIVE}.tar.gz
+          tar -xzf ${BOOST_ARCHIVE}.tar.gz
+          cd ${BOOST_ARCHIVE}
           echo "using gcc : : x86_64-w64-mingw32-g++ : <cxxflags>-pthread <linkflags>-pthread ;" > user-config.jam
           ./bootstrap.sh
           sudo ./b2 --user-config=user-config.jam \
@@ -104,22 +110,22 @@ jobs:
                     -d0 \
                     install
           cd ..
-          sudo rm -rf boost_1_83_0 boost_1_83_0.tar.gz
+          sudo rm -rf ${BOOST_ARCHIVE} ${BOOST_ARCHIVE}.tar.gz
 
       # Install CGAL only if the cache is missed
       - name: Install CGAL
         if: steps.cache-mingw.outputs.cache-hit != 'true'
         run: |
-          wget --quiet https://github.com/CGAL/cgal/releases/download/v5.6.1/CGAL-5.6.1.tar.xz
-          tar -xf CGAL-5.6.1.tar.xz
-          cd CGAL-5.6.1
+          wget --quiet https://github.com/CGAL/cgal/releases/download/v${CGAL_VERSION}/CGAL-${CGAL_VERSION}.tar.xz
+          tar -xf CGAL-${CGAL_VERSION}.tar.xz
+          cd CGAL-${CGAL_VERSION}
           mkdir build && cd build
           cmake .. -DCMAKE_TOOLCHAIN_FILE=../../mingw-toolchain.cmake \
                    -DCMAKE_INSTALL_PREFIX=/usr/x86_64-w64-mingw32
           make -j$(nproc) V=0
           sudo make install
           cd ../..
-          sudo rm -rf CGAL-5.6.1 CGAL-5.6.1.tar.xz
+          sudo rm -rf CGAL-${CGAL_VERSION} CGAL-${CGAL_VERSION}.tar.xz
 
       # Configure and build the surfer2 CLI (this step displays its normal log output)
       - name: Build surfer2 CLI
