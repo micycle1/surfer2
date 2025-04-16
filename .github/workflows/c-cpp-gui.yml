@@ -1,4 +1,4 @@
-name: Build surfer2 w/GUI for Windows
+name: Build surfer2 for Windows
 
 env:
   GMP_VERSION: 6.3.0
@@ -29,7 +29,7 @@ jobs:
           sudo apt-get -qq update
           sudo apt-get -qq install -y mingw-w64 cmake build-essential wget unzip
 
-      # Cache the MinGW sysroot to help speed up subsequent runs
+      # Cache the MinGW sysroot (from the non‑MXE installs, if any)
       - name: Cache MinGW sysroot
         id: cache-mingw
         uses: actions/cache@v4
@@ -97,7 +97,23 @@ jobs:
           cd ..
           sudo rm -rf ${BOOST_ARCHIVE} ${BOOST_ARCHIVE}.tar.gz
 
-      # Install CGAL if not cached
+      # ---------------------------------------------------------------------------
+      # New step: Build Windows Qt (qt5-base) using MXE.
+      # This step clones MXE and builds qt5-base. The MXE toolchain file will later be
+      # used for both CGAL and the final build.
+      # ---------------------------------------------------------------------------
+      - name: Build Windows Qt using MXE
+        run: |
+          git clone https://github.com/mxe/mxe.git
+          cd mxe
+          # Build only qt5-base (this can take a long time)
+          make qt5-base -j$(nproc)
+          cd ..
+
+      # ---------------------------------------------------------------------------
+      # Install CGAL using MXE’s toolchain.
+      # (Re-order this step so that the MXE toolchain file is available.)
+      # ---------------------------------------------------------------------------
       - name: Install CGAL
         if: steps.cache-mingw.outputs.cache-hit != 'true'
         run: |
@@ -105,31 +121,18 @@ jobs:
           tar -xf CGAL-${CGAL_VERSION}.tar.xz
           cd CGAL-${CGAL_VERSION}
           mkdir build && cd build
-          cmake .. -DCMAKE_TOOLCHAIN_FILE=../mingw-toolchain.cmake \
-                   -DCMAKE_INSTALL_PREFIX=/usr/x86_64-w64-mingw32
+          cmake .. \
+            -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/mxe/usr/x86_64-w64-mingw32.static/share/cmake/mxe-conf.cmake \
+            -DCMAKE_INSTALL_PREFIX=${{ github.workspace }}/mxe/usr/x86_64-w64-mingw32.static
           make -j$(nproc) V=0
           sudo make install
           cd ../..
           sudo rm -rf CGAL-${CGAL_VERSION} CGAL-${CGAL_VERSION}.tar.xz
 
       # ---------------------------------------------------------------------------
-      # New step: Build Windows Qt (qt5-base) using MXE
-      #
-      # This step clones MXE and builds only the essential Qt5 base modules.
-      # Note: Building qt5-base may take significant time. In a production CI setup,
-      # consider caching MXE's build artifacts.
-      # ---------------------------------------------------------------------------
-      - name: Build Windows Qt using MXE
-        run: |
-          git clone https://github.com/mxe/mxe.git
-          cd mxe
-          # Build only qt5-base (the essential parts needed for your surfgui target)
-          make qt5-base -j$(nproc)
-          cd ..
-      
-      # ---------------------------------------------------------------------------
       # Configure and build all subdirectories (CLI, GUI, and surf) for Windows.
-      # We now use MXE's CMake toolchain file which is set up to use the Windows Qt.
+      # We use MXE's CMake toolchain file so that cross‑compiled libraries (including Qt)
+      # are found properly.
       # ---------------------------------------------------------------------------
       - name: Build surfer2 for Windows
         run: |
@@ -138,17 +141,17 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE=${{ github.workspace }}/mxe/usr/x86_64-w64-mingw32.static/share/cmake/mxe-conf.cmake \
             -DCMAKE_BUILD_TYPE=Release \
             -DBOOST_ROOT=/usr/x86_64-w64-mingw32 \
-            -DCGAL_DIR=/usr/x86_64-w64-mingw32/lib/CGAL
-          # Build all targets
+            -DCGAL_DIR=${{ github.workspace }}/mxe/usr/x86_64-w64-mingw32.static/lib/CGAL
+          # Build all targets (CLI, GUI, surf)
           make -j$(nproc)
 
-      # Package and log the built executables along with required DLLs.
+      # Package the built executables along with required DLLs.
       - name: Package artifacts and log DLL locations
         run: |
           mkdir artifact_dir
-          # Copy the CLI executable (assuming output is in build/cc)
+          # Copy the CLI executable (assuming its output is in build/cc)
           cp build/cc/surfer.exe artifact_dir/ || echo "CLI target not found!"
-          # Copy the GUI executable (assuming output is in build/gui)
+          # Copy the GUI executable (assuming its output is in build/gui)
           cp build/gui/surfgui.exe artifact_dir/ || echo "GUI target not found!"
 
           # Locate and copy required DLLs
