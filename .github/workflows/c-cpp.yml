@@ -11,198 +11,147 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # Checkout the repository with submodules
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        submodules: recursive
+      # Checkout the repository along with its submodules
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-    # Install MinGW-w64 and basic tools
-    - name: Install MinGW-w64 and dependencies
-      run: |
-        sudo apt-get -qq update
-        sudo apt-get -qq install -y \
-          mingw-w64 \
-          cmake \
-          build-essential \
-          wget \
-          unzip
+      # Install MinGW-w64 and basic building tools
+      - name: Install MinGW-w64 and dependencies
+        run: |
+          sudo apt-get -qq update
+          sudo apt-get -qq install -y mingw-w64 cmake build-essential wget unzip
 
-    # --- Caching (Optional but Recommended) ---
-    - name: Cache MinGW sysroot
-      id: cache-mingw
-      uses: actions/cache@v4
-      with:
-        path: /usr/x86_64-w64-mingw32
-        # Use versions or commit hashes if available, otherwise file hashes
-        key: ${{ runner.os }}-mingw-boost-1.83.0-cgal-5.6.1
+      # Cache the MinGW sysroot to speed up subsequent runs
+      - name: Cache MinGW sysroot
+        id: cache-mingw
+        uses: actions/cache@v4
+        with:
+          path: /usr/x86_64-w64-mingw32
+          key: ${{ runner.os }}-mingw-boost-1.83.0-cgal-5.6.1
 
-    # --- Build Dependencies (only if cache missed) ---
+      # Install GMP only if the cache is missed
+      - name: Install GMP
+        if: steps.cache-mingw.outputs.cache-hit != 'true'
+        run: |
+          GMP_VERSION=6.3.0
+          wget --quiet https://ftp.gnu.org/gnu/gmp/gmp-${GMP_VERSION}.tar.xz
+          tar -xf gmp-${GMP_VERSION}.tar.xz
+          cd gmp-${GMP_VERSION}
+          ./configure --host=x86_64-w64-mingw32 \
+                      --prefix=/usr/x86_64-w64-mingw32 \
+                      --enable-cxx \
+                      --disable-shared --enable-static
+          make -j$(nproc) V=0
+          sudo make install
+          cd ..
+          sudo rm -rf gmp-${GMP_VERSION} gmp-${GMP_VERSION}.tar.xz
 
-    # Install GMP for MinGW-w64
-    - name: Install GMP
-      if: steps.cache-mingw.outputs.cache-hit != 'true'
-      run: |
-        GMP_VERSION=6.3.0
-        wget --quiet https://ftp.gnu.org/gnu/gmp/gmp-${GMP_VERSION}.tar.xz
-        tar -xf gmp-${GMP_VERSION}.tar.xz
-        cd gmp-${GMP_VERSION}
-        # Configure for MinGW cross-compilation
-        # Need --enable-cxx for CGAL
-        ./configure --host=x86_64-w64-mingw32 \
+      # Install MPFR only if the cache is missed
+      - name: Install MPFR
+        if: steps.cache-mingw.outputs.cache-hit != 'true'
+        run: |
+          MPFR_VERSION=4.2.1
+          ls /usr/x86_64-w64-mingw32/include/gmp.h || exit 1
+          ls /usr/x86_64-w64-mingw32/lib/libgmp.a || exit 1
+          ls /usr/x86_64-w64-mingw32/lib/libgmpxx.a || exit 1
+          wget --quiet https://ftp.gnu.org/gnu/mpfr/mpfr-${MPFR_VERSION}.tar.xz
+          tar -xf mpfr-${MPFR_VERSION}.tar.xz
+          cd mpfr-${MPFR_VERSION}
+          ./configure --host=x86_64-w64-mingw32 \
+                      --prefix=/usr/x86_64-w64-mingw32 \
+                      --with-gmp=/usr/x86_64-w64-mingw32 \
+                      --disable-shared --enable-static
+          make -j$(nproc) V=0
+          sudo make install
+          cd ..
+          sudo rm -rf mpfr-${MPFR_VERSION} mpfr-${MPFR_VERSION}.tar.xz
+
+      # Create a CMake toolchain file for MinGW cross-compilation
+      - name: Create CMake toolchain file
+        run: |
+          cat <<EOF > mingw-toolchain.cmake
+          set(CMAKE_SYSTEM_NAME Windows)
+          set(CMAKE_SYSTEM_PROCESSOR x86_64)
+          set(CMAKE_C_COMPILER x86_64-w64-mingw32-gcc)
+          set(CMAKE_CXX_COMPILER x86_64-w64-mingw32-g++)
+          set(CMAKE_RC_COMPILER x86_64-w64-mingw32-windres)
+          set(CMAKE_FIND_ROOT_PATH /usr/x86_64-w64-mingw32)
+          set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+          set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+          set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+          EOF
+
+      # Install Boost only if the cache is missed
+      - name: Install Boost
+        if: steps.cache-mingw.outputs.cache-hit != 'true'
+        run: |
+          wget --quiet https://downloads.sourceforge.net/project/boost/boost/1.83.0/boost_1_83_0.tar.gz
+          tar -xzf boost_1_83_0.tar.gz
+          cd boost_1_83_0
+          echo "using gcc : : x86_64-w64-mingw32-g++ : <cxxflags>-pthread <linkflags>-pthread ;" > user-config.jam
+          ./bootstrap.sh
+          sudo ./b2 --user-config=user-config.jam \
                     --prefix=/usr/x86_64-w64-mingw32 \
-                    --enable-cxx \
-                    --disable-shared --enable-static
-        make -j$(nproc) V=0 # Add V=0 to suppress verbose output
-        sudo make install
-        cd ..
-        sudo rm -rf gmp-${GMP_VERSION} gmp-${GMP_VERSION}.tar.xz
+                    toolset=gcc \
+                    target-os=windows \
+                    address-model=64 \
+                    variant=release \
+                    threading=multi \
+                    --with-graph \
+                    --with-iostreams \
+                    -d0 \
+                    install
+          cd ..
+          sudo rm -rf boost_1_83_0 boost_1_83_0.tar.gz
 
-    # Install MPFR for MinGW-w64
-    - name: Install MPFR
-      if: steps.cache-mingw.outputs.cache-hit != 'true'
-      run: |
-        MPFR_VERSION=4.2.1
-        echo "--- Checking GMP installation ---"
-        ls -l /usr/x86_64-w64-mingw32/include/gmp.h || (echo "GMP header missing!" && exit 1)
-        ls -l /usr/x86_64-w64-mingw32/lib/libgmp.a || (echo "Static GMP library missing!" && exit 1)
-        ls -l /usr/x86_64-w64-mingw32/lib/libgmpxx.a || (echo "Static GMP C++ library missing!" && exit 1)
-        echo "--- GMP files seem present. Proceeding with MPFR ---"
+      # Install CGAL only if the cache is missed
+      - name: Install CGAL
+        if: steps.cache-mingw.outputs.cache-hit != 'true'
+        run: |
+          wget --quiet https://github.com/CGAL/cgal/releases/download/v5.6.1/CGAL-5.6.1.tar.xz
+          tar -xf CGAL-5.6.1.tar.xz
+          cd CGAL-5.6.1
+          mkdir build && cd build
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../../mingw-toolchain.cmake \
+                   -DCMAKE_INSTALL_PREFIX=/usr/x86_64-w64-mingw32
+          make -j$(nproc) V=0
+          sudo make install
+          cd ../..
+          sudo rm -rf CGAL-5.6.1 CGAL-5.6.1.tar.xz
 
-        wget --quiet https://ftp.gnu.org/gnu/mpfr/mpfr-${MPFR_VERSION}.tar.xz
-        tar -xf mpfr-${MPFR_VERSION}.tar.xz
-        cd mpfr-${MPFR_VERSION}
+      # Configure and build the surfer2 CLI (this step displays its normal log output)
+      - name: Build surfer2 CLI
+        run: |
+          mkdir build && cd build
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../mingw-toolchain.cmake \
+                   -DCMAKE_BUILD_TYPE=Release \
+                   -DBOOST_ROOT=/usr/x86_64-w64-mingw32 \
+                   -DCGAL_DIR=/usr/x86_64-w64-mingw32/lib/CGAL \
+                   -DBUILD_CLI=ON
+          make -j$(nproc) surfer
 
-        echo "--- Configuring MPFR ---"
-        # Configure for MinGW, telling it where GMP is
-        ./configure --host=x86_64-w64-mingw32 \
-                    --prefix=/usr/x86_64-w64-mingw32 \
-                    --with-gmp=/usr/x86_64-w64-mingw32 \
-                    --disable-shared --enable-static
+      # Package the built executable along with required DLLs
+      - name: Package artifacts and log DLL locations
+        run: |
+          mkdir artifact_dir
+          cp build/cc/surfer.exe artifact_dir/
+          
+          DLL_GCC=$(find /usr -type f -name 'libgcc_s_seh-1.dll' | head -n 1)
+          [ -z "$DLL_GCC" ] && { echo "Error: libgcc_s_seh-1.dll not found!" && exit 1; } || { echo "Found libgcc_s_seh-1.dll"; cp "$DLL_GCC" artifact_dir/; }
+          
+          DLL_STDCXX=$(find /usr -type f -name 'libstdc++-6.dll' | head -n 1)
+          [ -z "$DLL_STDCXX" ] && { echo "Error: libstdc++-6.dll not found!" && exit 1; } || { echo "Found libstdc++-6.dll"; cp "$DLL_STDCXX" artifact_dir/; }
+          
+          DLL_WINPTHREAD=$(find /usr -type f -name 'libwinpthread-1.dll' | head -n 1)
+          if [ -n "$DLL_WINPTHREAD" ]; then
+            echo "Found libwinpthread-1.dll"
+            cp "$DLL_WINPTHREAD" artifact_dir/
+          fi
 
-        echo "--- Building MPFR (Verbose) ---"
-        # Use V=1 for verbose make output
-        make V=1 -j$(nproc)
-
-        echo "--- Installing MPFR ---"
-        sudo make install
-        cd ..
-        sudo rm -rf mpfr-${MPFR_VERSION} mpfr-${MPFR_VERSION}.tar.xz
-        echo "--- MPFR Step Completed ---"
-
-    - name: Create CMake toolchain file
-      run: |
-        cat <<EOF > mingw-toolchain.cmake
-        set(CMAKE_SYSTEM_NAME Windows)
-        set(CMAKE_SYSTEM_PROCESSOR x86_64)
-        set(CMAKE_C_COMPILER x86_64-w64-mingw32-gcc)
-        set(CMAKE_CXX_COMPILER x86_64-w64-mingw32-g++)
-        set(CMAKE_RC_COMPILER x86_64-w64-mingw32-windres)
-        set(CMAKE_FIND_ROOT_PATH /usr/x86_64-w64-mingw32)
-        set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
-        set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
-        set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
-        EOF
-
-    # Install Boost for MinGW-w64
-    - name: Install Boost
-      if: steps.cache-mingw.outputs.cache-hit != 'true'
-      run: |
-        wget --quiet https://downloads.sourceforge.net/project/boost/boost/1.83.0/boost_1_83_0.tar.gz
-        tar -xzf boost_1_83_0.tar.gz
-        cd boost_1_83_0
-
-        # Create user-config.jam to specify '-pthread' for the MinGW toolset
-        # This tells Boost Build (b2) to use -pthread instead of the default -mthreads for this compiler
-        echo "using gcc : : x86_64-w64-mingw32-g++ : <cxxflags>-pthread <linkflags>-pthread ;" > user-config.jam
-
-        # Bootstrap (may not strictly need user-config.jam before this, but doesn't hurt)
-        ./bootstrap.sh
-
-        # Build and install Boost using the configuration
-        # Added --user-config=user-config.jam to ensure it's picked up
-        # Kept threading=multi as we configured the flags for it
-        sudo ./b2 --user-config=user-config.jam \
-                 --prefix=/usr/x86_64-w64-mingw32 \
-                 toolset=gcc \
-                 target-os=windows \
-                 address-model=64 \
-                 variant=release \
-                 threading=multi \
-                 --with-graph \
-                 --with-iostreams \
-                 -d1 \
-                 install
-        cd ..
-        sudo rm -rf boost_1_83_0 boost_1_83_0.tar.gz # Clean up source
-
-    # Install CGAL for MinGW-w64
-    - name: Install CGAL
-      if: steps.cache-mingw.outputs.cache-hit != 'true'
-      run: |
-        wget --quiet https://github.com/CGAL/cgal/releases/download/v5.6.1/CGAL-5.6.1.tar.xz
-        tar -xf CGAL-5.6.1.tar.xz
-        cd CGAL-5.6.1
-        mkdir build
-        cd build
-        # --- Use the toolchain file from the workspace root ---
-        # The path is ../../ because we are in CGAL-5.6.1/build
-        cmake .. -DCMAKE_TOOLCHAIN_FILE=../../mingw-toolchain.cmake \
-                 -DCMAKE_INSTALL_PREFIX=/usr/x86_64-w64-mingw32
-        make -j$(nproc)
-        sudo make install
-        cd ../..
-        sudo rm -rf CGAL-5.6.1 CGAL-5.6.1.tar.xz # Use sudo for cleanup
-
-    # Configure and build surfer2 (CLI only)
-    - name: Build surfer2 CLI
-      run: |
-        mkdir build
-        cd build
-        # Removed ineffective -DBUILD_GUI=OFF
-        # Kept explicit BOOST_ROOT and CGAL_DIR, though they might be redundant
-        cmake .. -DCMAKE_TOOLCHAIN_FILE=../mingw-toolchain.cmake \
-                 -DCMAKE_BUILD_TYPE=Release \
-                 -DBOOST_ROOT=/usr/x86_64-w64-mingw32 \
-                 -DCGAL_DIR=/usr/x86_64-w64-mingw32/lib/CGAL \
-                 -DBUILD_CLI=ON # don't build GUI 
-        make -j$(nproc) surfer
-
-    - name: Package artifacts and log DLL locations
-      run: |
-        mkdir artifact_dir
-        cp build/cc/surfer.exe artifact_dir/
-    
-        # Locate libgcc_s_seh-1.dll and log its path
-        DLL_GCC=$(find /usr -type f -name 'libgcc_s_seh-1.dll' | head -n 1)
-        if [ -z "$DLL_GCC" ]; then
-          echo "Error: libgcc_s_seh-1.dll not found!" && exit 1
-        else
-          echo "Found libgcc_s_seh-1.dll at: $DLL_GCC"
-          cp "$DLL_GCC" artifact_dir/
-        fi
-    
-        # Locate libstdc++-6.dll and log its path
-        DLL_STDCXX=$(find /usr -type f -name 'libstdc++-6.dll' | head -n 1)
-        if [ -z "$DLL_STDCXX" ]; then
-          echo "Error: libstdc++-6.dll not found!" && exit 1
-        else
-          echo "Found libstdc++-6.dll at: $DLL_STDCXX"
-          cp "$DLL_STDCXX" artifact_dir/
-        fi
-    
-        # Locate libwinpthread-1.dll (if available) and log its path
-        DLL_WINPTHREAD=$(find /usr -type f -name 'libwinpthread-1.dll' | head -n 1)
-        if [ -n "$DLL_WINPTHREAD" ]; then
-          echo "Found libwinpthread-1.dll at: $DLL_WINPTHREAD"
-          cp "$DLL_WINPTHREAD" artifact_dir/
-        else
-          echo "libwinpthread-1.dll not found (not required?)"
-        fi
-
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: surfer2-windows-cli
-        path: artifact_dir # Upload the whole directory
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: surfer2-windows-cli
+          path: artifact_dir
