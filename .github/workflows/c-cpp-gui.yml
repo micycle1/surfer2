@@ -23,11 +23,29 @@ jobs:
         with:
           submodules: recursive
 
-      # Install MinGW-w64 and basic building tools
-      - name: Install MinGW-w64 and dependencies
+      # Install MinGW-w64 and basic building tools PLUS MXE host dependencies
+      - name: Install build dependencies
         run: |
           sudo apt-get -qq update
-          sudo apt-get -qq install -y mingw-w64 cmake build-essential wget unzip
+          sudo apt-get -qq install -y \
+            # Basic tools for cross-compilation and workflow
+            mingw-w64 \
+            cmake \
+            build-essential \
+            wget \
+            unzip \
+            # MXE host requirements identified from the build failure
+            gettext \
+            libgdk-pixbuf2.0-bin \
+            gperf \
+            intltool \
+            libtool \
+            lzip \
+            python3-mako \
+            # Other common build dependencies often needed
+            pkg-config \
+            autoconf \
+            automake
 
       # Cache the MinGW sysroot (from the non‑MXE installs, if any)
       - name: Cache MinGW sysroot
