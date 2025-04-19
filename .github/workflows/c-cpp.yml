@@ -135,7 +135,8 @@ jobs:
                    -DCMAKE_BUILD_TYPE=Release \
                    -DBOOST_ROOT=/usr/x86_64-w64-mingw32 \
                    -DCGAL_DIR=/usr/x86_64-w64-mingw32/lib/CGAL \
-                   -DBUILD_CLI=ON
+                   -DBUILD_CLI=ON \
+                   -DCMAKE_BUILD_TYPE=Debug
           make -j$(nproc) surfer
 
       # Package the built executable along with required DLLs
