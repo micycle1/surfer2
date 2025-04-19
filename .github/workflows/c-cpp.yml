@@ -3,8 +3,8 @@ name: Build surfer2 CLI for Windows
 env:
   GMP_VERSION: 6.3.0
   MPFR_VERSION: 4.2.1
-  BOOST_VERSION: 1.88.0
-  CGAL_VERSION: 5.6.1
+  BOOST_VERSION: 1.83.0
+  CGAL_VERSION: 5.6.2
 
 on:
   push:
