@@ -144,7 +144,7 @@ jobs:
                    -DCGAL_DIR=/usr/x86_64-w64-mingw32/lib/CGAL \
                    -DBUILD_CLI=ON \
                    -DCMAKE_BUILD_TYPE=Debug \
-                   -NT_USE_DOUBLE=ON
+                   -DNT_USE_DOUBLE=ON
           make -j$(nproc) surfer VERBOSE=1
           cd ..
 
@@ -174,7 +174,7 @@ jobs:
         run: |
           BUILD_DIR="build-Debug-OFF"
           mkdir $BUILD_DIR && cd $BUILD_DIR
-          cmake .. -DCMAKE_TOOLCHAIN_FILE=../mingw-toolchain.cmake -DCMAKE_INSTALL_PREFIX=/usr/x86_64-w64-mingw32 -DBOOST_ROOT=/usr/x86_64-w64-mingw32 -DCGAL_DIR=/usr/x86_64-w64-mingw32/lib/CGAL -DBUILD_CLI=ON -DCMAKE_BUILD_TYPE=Debug -NT_USE_DOUBLE=OFF
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../mingw-toolchain.cmake -DCMAKE_INSTALL_PREFIX=/usr/x86_64-w64-mingw32 -DBOOST_ROOT=/usr/x86_64-w64-mingw32 -DCGAL_DIR=/usr/x86_64-w64-mingw32/lib/CGAL -DBUILD_CLI=ON -DCMAKE_BUILD_TYPE=Debug -DNT_USE_DOUBLE=OFF
           make -j$(nproc) surfer VERBOSE=1
           cd ..
 
@@ -203,7 +203,7 @@ jobs:
         run: |
           BUILD_DIR="build-Release-ON"
           mkdir $BUILD_DIR && cd $BUILD_DIR
-          cmake .. -DCMAKE_TOOLCHAIN_FILE=../mingw-toolchain.cmake -DCMAKE_INSTALL_PREFIX=/usr/x86_64-w64-mingw32 -DBOOST_ROOT=/usr/x86_64-w64-mingw32 -DCGAL_DIR=/usr/x86_64-w64-mingw32/lib/CGAL -DBUILD_CLI=ON -DCMAKE_BUILD_TYPE=Release -NT_USE_DOUBLE=ON
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../mingw-toolchain.cmake -DCMAKE_INSTALL_PREFIX=/usr/x86_64-w64-mingw32 -DBOOST_ROOT=/usr/x86_64-w64-mingw32 -DCGAL_DIR=/usr/x86_64-w64-mingw32/lib/CGAL -DBUILD_CLI=ON -DCMAKE_BUILD_TYPE=Release -DNT_USE_DOUBLE=ON
           make -j$(nproc) surfer VERBOSE=1
           cd ..
 
@@ -232,7 +232,7 @@ jobs:
         run: |
           BUILD_DIR="build-Release-OFF"
           mkdir $BUILD_DIR && cd $BUILD_DIR
-          cmake .. -DCMAKE_TOOLCHAIN_FILE=../mingw-toolchain.cmake -DCMAKE_INSTALL_PREFIX=/usr/x86_64-w64-mingw32 -DBOOST_ROOT=/usr/x86_64-w64-mingw32 -DCGAL_DIR=/usr/x86_64-w64-mingw32/lib/CGAL -DBUILD_CLI=ON -DCMAKE_BUILD_TYPE=Release -NT_USE_DOUBLE=OFF
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../mingw-toolchain.cmake -DCMAKE_INSTALL_PREFIX=/usr/x86_64-w64-mingw32 -DBOOST_ROOT=/usr/x86_64-w64-mingw32 -DCGAL_DIR=/usr/x86_64-w64-mingw32/lib/CGAL -DBUILD_CLI=ON -DCMAKE_BUILD_TYPE=Release -DNT_USE_DOUBLE=OFF
           make -j$(nproc) surfer VERBOSE=1
           cd ..
 
