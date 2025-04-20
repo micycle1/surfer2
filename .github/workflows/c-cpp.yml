@@ -139,26 +139,122 @@ jobs:
                    -DCMAKE_BUILD_TYPE=Debug
           make -j$(nproc) surfer
 
-      # Package the built executable along with required DLLs
-      - name: Package artifacts and log DLL locations
+ - name: Build surfer2 CLI (Debug, Double=ON)
         run: |
-          mkdir artifact_dir
-          cp build/cc/surfer.exe artifact_dir/
-          
-          DLL_GCC=$(find /usr -type f -name 'libgcc_s_seh-1.dll' | head -n 1)
-          [ -z "$DLL_GCC" ] && { echo "Error: libgcc_s_seh-1.dll not found!" && exit 1; } || { echo "Found libgcc_s_seh-1.dll"; cp "$DLL_GCC" artifact_dir/; }
-          
-          DLL_STDCXX=$(find /usr -type f -name 'libstdc++-6.dll' | head -n 1)
-          [ -z "$DLL_STDCXX" ] && { echo "Error: libstdc++-6.dll not found!" && exit 1; } || { echo "Found libstdc++-6.dll"; cp "$DLL_STDCXX" artifact_dir/; }
-          
-          DLL_WINPTHREAD=$(find /usr -type f -name 'libwinpthread-1.dll' | head -n 1)
-          if [ -n "$DLL_WINPTHREAD" ]; then
-            echo "Found libwinpthread-1.dll"
-            cp "$DLL_WINPTHREAD" artifact_dir/
-          fi
+          BUILD_DIR="build-Debug-ON"
+          mkdir $BUILD_DIR && cd $BUILD_DIR
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../mingw-toolchain.cmake \
+                   -DCMAKE_INSTALL_PREFIX=/usr/x86_64-w64-mingw32 \
+                   -DBOOST_ROOT=/usr/x86_64-w64-mingw32 \
+                   -DCGAL_DIR=/usr/x86_64-w64-mingw32/lib/CGAL \
+                   -DBUILD_CLI=ON \
+                   -DCMAKE_BUILD_TYPE=Debug \
+                   -DNT_USE_DOUBLE=ON
+          make -j$(nproc) surfer VERBOSE=1
+          cd ..
 
-      - name: Upload artifacts
+      - name: Package artifact (Debug, Double=ON)
+        run: |
+          ARTIFACT_NAME="surfer2-windows-cli-Debug-double_ON"
+          PACKAGE_DIR="${{ env.ARTIFACT_STAGE_DIR }}/$ARTIFACT_NAME" # Use staging dir
+          BUILD_DIR="build-Debug-ON"
+          mkdir -p $PACKAGE_DIR
+          cp $BUILD_DIR/cc/surfer.exe $PACKAGE_DIR/
+          # Copy DLLs (simplified error handling for brevity)
+          find /usr/lib/gcc/x86_64-w64-mingw32 -name 'libgcc_s_seh-1.dll' -exec cp {} $PACKAGE_DIR/ \; || echo "Warning: libgcc_s_seh-1.dll not found"
+          find /usr/lib/gcc/x86_64-w64-mingw32 -name 'libstdc++-6.dll' -exec cp {} $PACKAGE_DIR/ \; || echo "Warning: libstdc++-6.dll not found"
+          find /usr/x86_64-w64-mingw32/bin -name 'libwinpthread-1.dll' -exec cp {} $PACKAGE_DIR/ \; || echo "Warning: libwinpthread-1.dll not found"
+
+      - name: Upload artifact (Debug, Double=ON) # <-- INDIVIDUAL UPLOAD
         uses: actions/upload-artifact@v4
         with:
-          name: surfer2-windows-cli
-          path: artifact_dir
+          name: surfer2-windows-cli-Debug-double_ON # Unique artifact name
+          path: ${{ env.ARTIFACT_STAGE_DIR }}/surfer2-windows-cli-Debug-double_ON # Path to this variant's files
+          if-no-files-found: error
+
+      # ==============================================================
+      # == Build & Upload Variant 2: Debug, Double=OFF             ==
+      # ==============================================================
+      - name: Build surfer2 CLI (Debug, Double=OFF)
+        run: |
+          BUILD_DIR="build-Debug-OFF"
+          mkdir $BUILD_DIR && cd $BUILD_DIR
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../mingw-toolchain.cmake -DCMAKE_INSTALL_PREFIX=/usr/x86_64-w64-mingw32 -DBOOST_ROOT=/usr/x86_64-w64-mingw32 -DCGAL_DIR=/usr/x86_64-w64-mingw32/lib/CGAL -DBUILD_CLI=ON -DCMAKE_BUILD_TYPE=Debug -DNT_USE_DOUBLE=OFF
+          make -j$(nproc) surfer VERBOSE=1
+          cd ..
+
+      - name: Package artifact (Debug, Double=OFF)
+        run: |
+          ARTIFACT_NAME="surfer2-windows-cli-Debug-double_OFF"
+          PACKAGE_DIR="${{ env.ARTIFACT_STAGE_DIR }}/$ARTIFACT_NAME"
+          BUILD_DIR="build-Debug-OFF"
+          mkdir -p $PACKAGE_DIR
+          cp $BUILD_DIR/cc/surfer.exe $PACKAGE_DIR/
+          find /usr/lib/gcc/x86_64-w64-mingw32 -name 'libgcc_s_seh-1.dll' -exec cp {} $PACKAGE_DIR/ \; || echo "Warning: libgcc_s_seh-1.dll not found"
+          find /usr/lib/gcc/x86_64-w64-mingw32 -name 'libstdc++-6.dll' -exec cp {} $PACKAGE_DIR/ \; || echo "Warning: libstdc++-6.dll not found"
+          find /usr/x86_64-w64-mingw32/bin -name 'libwinpthread-1.dll' -exec cp {} $PACKAGE_DIR/ \; || echo "Warning: libwinpthread-1.dll not found"
+
+      - name: Upload artifact (Debug, Double=OFF) # <-- INDIVIDUAL UPLOAD
+        uses: actions/upload-artifact@v4
+        with:
+          name: surfer2-windows-cli-Debug-double_OFF
+          path: ${{ env.ARTIFACT_STAGE_DIR }}/surfer2-windows-cli-Debug-double_OFF
+          if-no-files-found: error
+
+      # ==============================================================
+      # == Build & Upload Variant 3: Release, Double=ON            ==
+      # ==============================================================
+      - name: Build surfer2 CLI (Release, Double=ON)
+        run: |
+          BUILD_DIR="build-Release-ON"
+          mkdir $BUILD_DIR && cd $BUILD_DIR
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../mingw-toolchain.cmake -DCMAKE_INSTALL_PREFIX=/usr/x86_64-w64-mingw32 -DBOOST_ROOT=/usr/x86_64-w64-mingw32 -DCGAL_DIR=/usr/x86_64-w64-mingw32/lib/CGAL -DBUILD_CLI=ON -DCMAKE_BUILD_TYPE=Release -DNT_USE_DOUBLE=ON
+          make -j$(nproc) surfer VERBOSE=1
+          cd ..
+
+      - name: Package artifact (Release, Double=ON)
+        run: |
+          ARTIFACT_NAME="surfer2-windows-cli-Release-double_ON"
+          PACKAGE_DIR="${{ env.ARTIFACT_STAGE_DIR }}/$ARTIFACT_NAME"
+          BUILD_DIR="build-Release-ON"
+          mkdir -p $PACKAGE_DIR
+          cp $BUILD_DIR/cc/surfer.exe $PACKAGE_DIR/
+          find /usr/lib/gcc/x86_64-w64-mingw32 -name 'libgcc_s_seh-1.dll' -exec cp {} $PACKAGE_DIR/ \; || echo "Warning: libgcc_s_seh-1.dll not found"
+          find /usr/lib/gcc/x86_64-w64-mingw32 -name 'libstdc++-6.dll' -exec cp {} $PACKAGE_DIR/ \; || echo "Warning: libstdc++-6.dll not found"
+          find /usr/x86_64-w64-mingw32/bin -name 'libwinpthread-1.dll' -exec cp {} $PACKAGE_DIR/ \; || echo "Warning: libwinpthread-1.dll not found"
+
+      - name: Upload artifact (Release, Double=ON) # <-- INDIVIDUAL UPLOAD
+        uses: actions/upload-artifact@v4
+        with:
+          name: surfer2-windows-cli-Release-double_ON
+          path: ${{ env.ARTIFACT_STAGE_DIR }}/surfer2-windows-cli-Release-double_ON
+          if-no-files-found: error
+
+      # ==============================================================
+      # == Build & Upload Variant 4: Release, Double=OFF           ==
+      # ==============================================================
+      - name: Build surfer2 CLI (Release, Double=OFF)
+        run: |
+          BUILD_DIR="build-Release-OFF"
+          mkdir $BUILD_DIR && cd $BUILD_DIR
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../mingw-toolchain.cmake -DCMAKE_INSTALL_PREFIX=/usr/x86_64-w64-mingw32 -DBOOST_ROOT=/usr/x86_64-w64-mingw32 -DCGAL_DIR=/usr/x86_64-w64-mingw32/lib/CGAL -DBUILD_CLI=ON -DCMAKE_BUILD_TYPE=Release -DNT_USE_DOUBLE=OFF
+          make -j$(nproc) surfer VERBOSE=1
+          cd ..
+
+      - name: Package artifact (Release, Double=OFF)
+        run: |
+          ARTIFACT_NAME="surfer2-windows-cli-Release-double_OFF"
+          PACKAGE_DIR="${{ env.ARTIFACT_STAGE_DIR }}/$ARTIFACT_NAME"
+          BUILD_DIR="build-Release-OFF"
+          mkdir -p $PACKAGE_DIR
+          cp $BUILD_DIR/cc/surfer.exe $PACKAGE_DIR/
+          find /usr/lib/gcc/x86_64-w64-mingw32 -name 'libgcc_s_seh-1.dll' -exec cp {} $PACKAGE_DIR/ \; || echo "Warning: libgcc_s_seh-1.dll not found"
+          find /usr/lib/gcc/x86_64-w64-mingw32 -name 'libstdc++-6.dll' -exec cp {} $PACKAGE_DIR/ \; || echo "Warning: libstdc++-6.dll not found"
+          find /usr/x86_64-w64-mingw32/bin -name 'libwinpthread-1.dll' -exec cp {} $PACKAGE_DIR/ \; || echo "Warning: libwinpthread-1.dll not found"
+
+      - name: Upload artifact (Release, Double=OFF) # <-- INDIVIDUAL UPLOAD
+        uses: actions/upload-artifact@v4
+        with:
+          name: surfer2-windows-cli-Release-double_OFF
+          path: ${{ env.ARTIFACT_STAGE_DIR }}/surfer2-windows-cli-Release-double_OFF
+          if-no-files-found: error
