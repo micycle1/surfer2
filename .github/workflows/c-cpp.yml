@@ -127,17 +127,11 @@ jobs:
           cd ../..
           sudo rm -rf CGAL-${CGAL_VERSION} CGAL-${CGAL_VERSION}.tar.xz
 
-      # Configure and build the surfer2 CLI (this step displays its normal log output)
-      - name: Build surfer2 CLI
-        run: |
-          mkdir build && cd build
-          cmake .. -DCMAKE_TOOLCHAIN_FILE=../mingw-toolchain.cmake \
-                   -DCMAKE_BUILD_TYPE=Release \
-                   -DBOOST_ROOT=/usr/x86_64-w64-mingw32 \
-                   -DCGAL_DIR=/usr/x86_64-w64-mingw32/lib/CGAL \
-                   -DBUILD_CLI=ON \
-                   -DCMAKE_BUILD_TYPE=Debug
-          make -j$(nproc) surfer
+      # ==============================================================
+      # == Prepare Staging Area (Run Once)                         ==
+      # ==============================================================
+      - name: Create artifact staging directory # <-- ADD THIS STEP
+        run: mkdir -p ${{ env.ARTIFACT_STAGE_DIR }}
 
       - name: Build surfer2 CLI (Debug, Double=ON)
         run: |
@@ -149,7 +143,7 @@ jobs:
                    -DCGAL_DIR=/usr/x86_64-w64-mingw32/lib/CGAL \
                    -DBUILD_CLI=ON \
                    -DCMAKE_BUILD_TYPE=Debug \
-                   -DNT_USE_DOUBLE=ON
+                   -NT_USE_DOUBLE=ON
           make -j$(nproc) surfer VERBOSE=1
           cd ..
 
@@ -179,7 +173,7 @@ jobs:
         run: |
           BUILD_DIR="build-Debug-OFF"
           mkdir $BUILD_DIR && cd $BUILD_DIR
-          cmake .. -DCMAKE_TOOLCHAIN_FILE=../mingw-toolchain.cmake -DCMAKE_INSTALL_PREFIX=/usr/x86_64-w64-mingw32 -DBOOST_ROOT=/usr/x86_64-w64-mingw32 -DCGAL_DIR=/usr/x86_64-w64-mingw32/lib/CGAL -DBUILD_CLI=ON -DCMAKE_BUILD_TYPE=Debug -DNT_USE_DOUBLE=OFF
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../mingw-toolchain.cmake -DCMAKE_INSTALL_PREFIX=/usr/x86_64-w64-mingw32 -DBOOST_ROOT=/usr/x86_64-w64-mingw32 -DCGAL_DIR=/usr/x86_64-w64-mingw32/lib/CGAL -DBUILD_CLI=ON -DCMAKE_BUILD_TYPE=Debug -NT_USE_DOUBLE=OFF
           make -j$(nproc) surfer VERBOSE=1
           cd ..
 
@@ -208,7 +202,7 @@ jobs:
         run: |
           BUILD_DIR="build-Release-ON"
           mkdir $BUILD_DIR && cd $BUILD_DIR
-          cmake .. -DCMAKE_TOOLCHAIN_FILE=../mingw-toolchain.cmake -DCMAKE_INSTALL_PREFIX=/usr/x86_64-w64-mingw32 -DBOOST_ROOT=/usr/x86_64-w64-mingw32 -DCGAL_DIR=/usr/x86_64-w64-mingw32/lib/CGAL -DBUILD_CLI=ON -DCMAKE_BUILD_TYPE=Release -DNT_USE_DOUBLE=ON
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../mingw-toolchain.cmake -DCMAKE_INSTALL_PREFIX=/usr/x86_64-w64-mingw32 -DBOOST_ROOT=/usr/x86_64-w64-mingw32 -DCGAL_DIR=/usr/x86_64-w64-mingw32/lib/CGAL -DBUILD_CLI=ON -DCMAKE_BUILD_TYPE=Release -NT_USE_DOUBLE=ON
           make -j$(nproc) surfer VERBOSE=1
           cd ..
 
@@ -237,7 +231,7 @@ jobs:
         run: |
           BUILD_DIR="build-Release-OFF"
           mkdir $BUILD_DIR && cd $BUILD_DIR
-          cmake .. -DCMAKE_TOOLCHAIN_FILE=../mingw-toolchain.cmake -DCMAKE_INSTALL_PREFIX=/usr/x86_64-w64-mingw32 -DBOOST_ROOT=/usr/x86_64-w64-mingw32 -DCGAL_DIR=/usr/x86_64-w64-mingw32/lib/CGAL -DBUILD_CLI=ON -DCMAKE_BUILD_TYPE=Release -DNT_USE_DOUBLE=OFF
+          cmake .. -DCMAKE_TOOLCHAIN_FILE=../mingw-toolchain.cmake -DCMAKE_INSTALL_PREFIX=/usr/x86_64-w64-mingw32 -DBOOST_ROOT=/usr/x86_64-w64-mingw32 -DCGAL_DIR=/usr/x86_64-w64-mingw32/lib/CGAL -DBUILD_CLI=ON -DCMAKE_BUILD_TYPE=Release -NT_USE_DOUBLE=OFF
           make -j$(nproc) surfer VERBOSE=1
           cd ..
 
