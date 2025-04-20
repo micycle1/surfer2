@@ -139,7 +139,7 @@ jobs:
                    -DCMAKE_BUILD_TYPE=Debug
           make -j$(nproc) surfer
 
- - name: Build surfer2 CLI (Debug, Double=ON)
+      - name: Build surfer2 CLI (Debug, Double=ON)
         run: |
           BUILD_DIR="build-Debug-ON"
           mkdir $BUILD_DIR && cd $BUILD_DIR
