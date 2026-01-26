@@ -1,0 +1,25 @@
+{
+  "name": "surfer2",
+  "version-string": "1.99.0",
+  "builtin-baseline": "054637a2ae63c6c647b3169251759910cc4c984a",
+  "dependencies": [
+    "boost-graph",
+    "boost-iostreams",
+    "gtest",
+    "gmp",
+    {
+      "name": "cgal",
+      "default-features": false
+    }
+  ],
+  "overrides": [
+    {
+      "name": "cgal",
+      "version": "5.6.1#1"
+    },
+    {
+      "name": "gmp",
+      "version": "6.3.0#3"
+    }
+  ]
+}

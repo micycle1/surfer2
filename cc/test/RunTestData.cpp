@@ -18,7 +18,11 @@
 #include "gtest/gtest.h"
 
 #include <filesystem>
-#include <unistd.h>
+#ifdef _WIN32
+  #include <io.h>
+#else
+  #include <unistd.h>
+#endif
 
 /* defined in main.cpp when SURF_TEST_SUITE is defined */
 int run_surfer(int argc, char *argv[]);
@@ -53,7 +57,11 @@ TEST_P(SurferRunTest, Run) {
 
   args.push_back( /* <dummy> */ "surfer");
   args.push_back(GetParam());
-  args.push_back("/dev/null");
+  #ifdef _WIN32
+    args.push_back("NUL");
+  #else
+    args.push_back("/dev/null");
+  #endif
 
   EXPECT_EXIT(call_surfer(args), ::testing::ExitedWithCode(0), "All done.");
 }

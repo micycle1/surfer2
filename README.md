@@ -58,6 +58,17 @@ the CXX environment variable when calling cmake.
 Other build options are `TEST_SUITE`, which defaults to off (to enable, pass `-DTEST_SUITE=on` to cmake),
 and `BUILD_SHARED_LIBS` and `LIB_ONLY` (also off by default).
 
+### On Windows
+1. Install vcpkg. Run `vcpkg integrate install`.
+2. Create a `/build` folder inside the surfer2 directory.
+3. From that directory, run (for cli only):
+
+   `cmake .. -G "Visual Studio 17 2022" -A x64 -DCMAKE_TOOLCHAIN_FILE="mydir/vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_TARGET_TRIPLET=x64-windows -DCMAKE_CXX_STANDARD=17 -DBUILD_CLI=ON -DTEST_SUITE=OFF`
+
+   (replace *mydir* with the actual path to your vcpkg directory).
+
+4. Open the generated `build/ORD53.sln` in Visual Studio and build the solution.
+
 # Running the command line client or gui
 
 Both the command line client, `surfer`, as well as the gui, `surfgui` take
